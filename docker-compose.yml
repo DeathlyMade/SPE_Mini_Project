@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    image: sci-calc-backend-dev
+    container_name: sci-calc-backend-dev
+    # mount your backend sources into the container so edits are picked immediately
+    volumes:
+      - .:/app/backend:delegated
+      # cache local maven repository (prevents re-downloading deps every time)
+      - m2-repo:/root/.m2/repository
+    environment:
+      - MAVEN_OPTS=-Xmx512m
+      # optional: set spring profile or devtools flags
+      - SPRING_PROFILES_ACTIVE=dev
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health || true"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    image: sci-calc-frontend-dev
+    container_name: sci-calc-frontend-dev
+    # mount the frontend source so Vite sees file changes
+    volumes:
+      - ./frontend/science-calc:/frontend:delegated
+      # preserve node_modules installed in the image layer in this volume
+      - frontend_node_modules:/frontend/node_modules
+    environment:
+      # ensure vite dev server listens properly
+      - CHOKIDAR_USEPOLLING=true
+      - BROWSER=none
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    command: ["npm", "run", "dev"]
+
+volumes:
+  m2-repo:
+  frontend_node_modules:
