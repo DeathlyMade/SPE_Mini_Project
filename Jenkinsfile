@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git pull origin main
+                git 'https://github.com/DeathlyMade/SPE_Mini_Project.git'
             }
         }
 
