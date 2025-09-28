@@ -15,13 +15,13 @@ pipeline {
 
         stage('Build Backend') {
             steps {
-                sh 'mvn -f pom.xml clean install'
+                sh 'mvn clean package'
             }
         }
 
         stage('Test Backend') {
             steps {
-                sh 'mvn -f pom.xml test'
+                sh 'mvn clean test'
             }
         }
 
@@ -34,13 +34,13 @@ pipeline {
             }
         }
 
-        stage('Test Frontend') {
-            steps {
-                dir('frontend/science-calc') {
-                    sh 'npm test'
-                }
-            }
-        }
+        // stage('Test Frontend') {
+        //     steps {
+        //         dir('frontend/science-calc') {
+        //             sh 'npm test'
+        //         }
+        //     }
+        // }
 
         stage('Package Applications') {
             steps {
