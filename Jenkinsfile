@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven 3.8.6' // Replace with your Maven tool name in Jenkins
-        nodejs 'NodeJS 16.14.2' // Replace with your NodeJS tool name in Jenkins
+        maven 'maven' // Replace with your Maven tool name in Jenkins
+        nodejs 'node' // Replace with your NodeJS tool name in Jenkins
     }
 
     stages {
