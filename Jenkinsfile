@@ -42,15 +42,15 @@ pipeline {
         //     }
         // }
 
-        stage('Package Applications') {
-            steps {
-                // Example of archiving artifacts
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                dir('frontend/science-calc/build') {
-                    archiveArtifacts artifacts: '**/*', fingerprint: true
-                }
-            }
-        }
+        // stage('Package Applications') {
+        //     steps {
+        //         // Example of archiving artifacts
+        //         archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+        //         dir('frontend/science-calc/build') {
+        //             archiveArtifacts artifacts: '**/*', fingerprint: true
+        //         }
+        //     }
+        // }
     }
 
     post {
