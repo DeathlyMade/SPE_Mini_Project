@@ -2,11 +2,8 @@ version: "3.9"
 
 services:
   backend:
-    build:
-      context: .
-      dockerfile: backend.Dockerfile
-    image: sci-calc-backend-dev
-    container_name: sci-calc-backend-dev
+    image: deathlymade/science-calc-backend:latest
+    container_name: sci-calc-backend
     # mount your backend sources into the container so edits are picked immediately
     volumes:
       - .:/app/backend:delegated
@@ -25,11 +22,8 @@ services:
       retries: 6
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend.Dockerfile
-    image: sci-calc-frontend-dev
-    container_name: sci-calc-frontend-dev
+    image: deathlymade/science-calc-frontend:latest
+    container_name: sci-calc-frontend
     # mount the frontend source so Vite sees file changes
     volumes:
       - ./frontend/science-calc:/frontend:delegated
