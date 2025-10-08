@@ -1,0 +1,54 @@
+# deploy-ansible-native.yml
+---
+- name: Deploy Application with Ansible and Docker
+  hosts: webservers
+  become: yes # Required to interact with the Docker daemon
+
+  # These variables will be passed in from the Jenkins pipeline
+  vars:
+    backend_image: "deathlymade/spe-backend:latest"
+    frontend_image: "deathlymade/spe-frontend:latest"
+    app_network: "spe-app-network"
+
+  tasks:
+    - name: Ensure python3-pip is installed
+      apt:
+        name: python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Install Docker SDK for Python (required for Ansible modules)
+      pip:
+        name: docker
+        state: present
+
+    - name: Create a dedicated network for the application
+      community.docker.docker_network:
+        name: "{{ app_network }}"
+        state: present
+
+    - name: Deploy the backend container
+      community.docker.docker_container:
+        name: spe-backend-container
+        image: "{{ backend_image }}"
+        pull: yes  # CRITICAL: Pulls the latest image from the registry
+        state: started
+        recreate: yes # Always recreate the container to ensure the new image is used
+        restart_policy: always
+        ports:
+          - "8081:8081"
+        networks:
+          - name: "{{ app_network }}"
+
+    - name: Deploy the frontend container
+      community.docker.docker_container:
+        name: spe-frontend-container
+        image: "{{ frontend_image }}"
+        pull: yes
+        state: started
+        recreate: yes
+        restart_policy: always
+        ports:
+          - "3000:3000"
+        networks:
+          - name: "{{ app_network }}"
