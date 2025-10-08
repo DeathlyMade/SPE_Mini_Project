@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       '/api': {
-        target: 'http://backend:8080',
+        target: 'http://backend:8081',
         changeOrigin: true,
         secure: false
       }
