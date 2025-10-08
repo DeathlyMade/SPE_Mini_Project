@@ -1,67 +1,83 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'maven' // Replace with your Maven tool name in Jenkins
-        nodejs 'node' // Replace with your NodeJS tool name in Jenkins
+    environment {
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
+        DOCKERHUB_USERNAME = 'deathlymade' // <--- CHANGE THIS
+        BACKEND_IMAGE_NAME = "deathlymade/spe-backend"
+        FRONTEND_IMAGE_NAME = "deathlymade/spe-frontend"
     }
 
     stages {
         stage('Checkout') {
             steps {
+                echo 'Pulling latest code from repository...'
                 git branch: 'main', url: 'https://github.com/DeathlyMade/SPE_Mini_Project.git'
             }
         }
 
-        stage('Build Backend') {
+        stage('Build & Test Backend') {
             steps {
-                sh 'mvn clean package'
+                echo 'Building and testing the Java backend...'
+                sh 'mvn clean install'
             }
         }
 
-        stage('Test Backend') {
+        stage('Build & Tag Docker Images') {
             steps {
-                sh 'mvn clean test'
+                echo 'Building Docker images...'
+                sh "docker build -t ${env.BACKEND_IMAGE_NAME}:latest -f backend.Dockerfile ."
+                sh "docker build -t ${env.FRONTEND_IMAGE_NAME}:latest -f frontend.Dockerfile ."
             }
         }
 
-        stage('Build Frontend') {
+        stage('Push Docker Images to Docker Hub') {
             steps {
-                dir('frontend/science-calc') {
-                    sh 'npm install'
-                    sh 'npm run build'
+                echo "Logging in to Docker Hub and pushing images..."
+                withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    sh "docker push ${env.BACKEND_IMAGE_NAME}:latest"
+                    sh "docker push ${env.FRONTEND_IMAGE_NAME}:latest"
                 }
             }
         }
 
-        // stage('Test Frontend') {
-        //     steps {
-        //         dir('frontend/science-calc') {
-        //             sh 'npm test'
-        //         }
-        //     }
-        // }
-
-        // stage('Package Applications') {
-        //     steps {
-        //         // Example of archiving artifacts
-        //         archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-        //         dir('frontend/science-calc/build') {
-        //             archiveArtifacts artifacts: '**/*', fingerprint: true
-        //         }
-        //     }
-        // }
+        stage('Deploy with Ansible') {
+            steps {
+                echo 'Deploying application using Ansible native Docker modules...'
+                ansiblePlaybook(
+                    // Call the new playbook that doesn't use docker-compose
+                    playbook: 'deploy-ansible-native.yml',
+                    inventory: 'inventory',
+                    // The variables passed to Ansible remain the same
+                    extras: "-e 'backend_image=${env.BACKEND_IMAGE_NAME}:latest' -e 'frontend_image=${env.FRONTEND_IMAGE_NAME}:latest' -e 'ansible_python_interpreter=/usr/bin/python3'"
+                )
+            }
+        }
     }
 
     post {
-        always {
-            echo 'Build process finished.'
-        }
         success {
-            echo 'Build successful!'
+            emailext(
+                subject: "SUCCESS: Pipeline '${currentBuild.fullDisplayName}'",
+                body: """<p>Build and Deployment Succeeded!</p>
+                       <p>Project: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}</p>
+                       <p>Check the console output at: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>""",
+                to: 'divyamsareen@gmail.com' // <--- CHANGE THIS
+            )
         }
         failure {
-            echo 'Build failed.'
+            emailext(
+                subject: "FAILURE: Pipeline '${currentBuild.fullDisplayName}'",
+                body: """<p>Build Failed!</p>
+                       <p>Project: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}</p>
+                       <p>Check the console output at: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>""",
+                to: 'divyamsareen@gmail.com' // <--- CHANGE THIS
+            )
+        }
+        always {
+            echo 'Pipeline finished.'
+            cleanWs()
         }
     }
 }
