@@ -52,7 +52,7 @@ pipeline {
                 //     // The variables passed to Ansible remain the same
                 //     extras: "-e 'backend_image=${env.BACKEND_IMAGE_NAME}:latest' -e 'frontend_image=${env.FRONTEND_IMAGE_NAME}:latest' -e 'ansible_python_interpreter=/usr/bin/python3'"
                 // )
-                sh "ansible-playbook -i inventory deploy-ansible.yml"
+                sh "ansible-playbook -i inventory -vvv deploy-ansible.yml"
             }
         }
     }
