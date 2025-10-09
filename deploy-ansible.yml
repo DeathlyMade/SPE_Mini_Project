@@ -101,7 +101,7 @@
         volumes:
           # We ONLY keep the named volume for node_modules to preserve it if needed,
           # though with `npm ci` it's less critical. Can be removed if you prefer.
-          # test comment
+          # test comment2
           - "frontend_node_modules:/frontend/node_modules"
         ports:
           - "5173:5173"
