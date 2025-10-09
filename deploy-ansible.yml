@@ -1,54 +1,89 @@
-# deploy-ansible-native.yml
 ---
-- name: Deploy Application with Ansible and Docker
-  hosts: webservers
-  become: yes # Required to interact with the Docker daemon
+- name: Deploy Scientific Calculator Application with Ansible
+  hosts: localhost
+  connection: local
+  become: yes
 
-  # These variables will be passed in from the Jenkins pipeline
   vars:
-    backend_image: "deathlymade/spe-backend:latest"
-    frontend_image: "deathlymade/spe-frontend:latest"
-    app_network: "spe-app-network"
+    backend_image_name: "deathlymade/spe-backend"
+    frontend_image_name: "deathlymade/spe-frontend"
+    backend_container_name: "sci-calc-backend-dev"
+    frontend_container_name: "sci-calc-frontend-dev"
+    app_network: "sci-calc-net"
 
   tasks:
-    - name: Ensure python3-pip is installed
-      apt:
-        name: python3-pip
-        state: present
-        update_cache: yes
-
-    - name: Install Docker SDK for Python (required for Ansible modules)
+    - name: Install required Python libraries for Ansible Docker modules
       pip:
-        name: docker
+        name:
+          - docker
+          - docker-compose
         state: present
 
-    # - name: Create a dedicated network for the application
-    #   community.docker.docker_network:
-    #     name: "{{ app_network }}"
-    #     state: present
+    - name: Create Docker volumes
+      docker_volume:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - m2-repo
+        - frontend_node_modules
 
-    - name: Deploy the backend container
-      community.docker.docker_container:
-        name: spe-backend-container
-        image: "{{ backend_image }}"
-        pull: yes  # CRITICAL: Pulls the latest image from the registry
-        state: started
-        recreate: yes # Always recreate the container to ensure the new image is used
-        restart_policy: always
-        ports:
-          - "8081:8081"
-        # networks:
-        #   - name: "{{ app_network }}"
+    - name: Create a dedicated network for the application
+      docker_network:
+        name: "{{ app_network }}"
+        state: present
 
-    - name: Deploy the frontend container
-      community.docker.docker_container:
-        name: spe-frontend-container
-        image: "{{ frontend_image }}"
-        pull: yes
+    - name: Build the backend image
+      docker_image:
+        name: "{{ backend_image_name }}"
+        build:
+          path: .
+          dockerfile: backend.Dockerfile
+        source: build
+        state: present
+      register: backend_image
+
+    - name: Run the backend container
+      docker_container:
+        name: "{{ backend_container_name }}"
+        image: "{{ backend_image_name }}"
         state: started
         recreate: yes
-        restart_policy: always
+        volumes:
+          - "./:/app/backend:delegated"
+          - "m2-repo:/root/.m2/repository"
+        ports:
+          - "8081:8081"
+        env:
+          SPRING_PROFILES_ACTIVE: "dev"
+        networks:
+          - name: "{{ app_network }}"
+            aliases:
+              - backend
+
+    - name: Build the frontend image
+      docker_image:
+        name: "{{ frontend_image_name }}"
+        build:
+          path: .
+          dockerfile: frontend.Dockerfile
+        source: build
+        state: present
+      register: frontend_image
+
+    - name: Run the frontend container
+      docker_container:
+        name: "{{ frontend_container_name }}"
+        image: "{{ frontend_image_name }}"
+        state: started
+        recreate: yes
+        volumes:
+          - "./frontend/science-calc:/frontend:delegated"
+          - "frontend_node_modules:/frontend/node_modules"
         ports:
           - "5173:5173"
-        # networks:
-        #   - name: "{{ app_network }}"
+        env:
+          CHOKIDAR_USEPOLLING: "true"
+          BROWSER: "none"
+        networks:
+          - name: "{{ app_network }}"
+        command: ["npm", "run", "dev"]

@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  backend:
+    image: deathlymade/spe-backend
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: sci-calc-backend-dev
+    volumes:
+      - .:/app/backend:delegated
+      - m2-repo:/root/.m2/repository
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+
+  frontend:
+    image: deathlymade/spe-frontend
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: sci-calc-frontend-dev
+    volumes:
+      - ./frontend/science-calc:/frontend:delegated
+      # preserve node_modules from the container image (named volume)
+      - frontend_node_modules:/frontend/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - BROWSER=none
+    depends_on:
+      - backend
+    command: ["npm", "run", "dev"]
+
+volumes:
+  m2-repo:
+  frontend_node_modules:

@@ -1,3 +1,2 @@
-# inventory
-[webservers]
+[local]
 localhost ansible_connection=local
