@@ -45,14 +45,13 @@ pipeline {
         stage('Deploy with Ansible') {
             steps {
                 echo 'Deploying application using Ansible native Docker modules...'
-                // ansiblePlaybook(
-                //     // Call the new playbook that doesn't use docker-compose
-                //     playbook: 'deploy-ansible.yml',
-                //     inventory: 'inventory',
-                //     // The variables passed to Ansible remain the same
-                //     extras: "-e 'backend_image=${env.BACKEND_IMAGE_NAME}:latest' -e 'frontend_image=${env.FRONTEND_IMAGE_NAME}:latest' -e 'ansible_python_interpreter=/usr/bin/python3'"
-                // )
-                sh "ansible-playbook -i inventory -vvv deploy-ansible.yml"
+                ansiblePlaybook(
+                    // Call the new playbook that doesn't use docker-compose
+                    playbook: 'deploy-ansible.yml',
+                    inventory: 'inventory',
+                    // The variables passed to Ansible remain the same
+                    extras: "-e 'backend_image=${env.BACKEND_IMAGE_NAME}:latest' -e 'frontend_image=${env.FRONTEND_IMAGE_NAME}:latest' -e 'ansible_python_interpreter=/usr/bin/python3'"
+                )
             }
         }
     }
