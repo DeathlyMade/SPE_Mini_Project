@@ -12,7 +12,7 @@ const App: React.FC = () => {
         <Calculator />
       </main>
       <footer>
-        <small>Backend: Spring Boot API at lol<code>/api/*</code></small>
+        <small>Backend: Spring Boot API at <code>/api/*</code></small>
       </footer>
     </div>
   );
