@@ -96,8 +96,11 @@
         image: "{{ frontend_image_name }}"
         state: started
         recreate: yes
+        # We remove the application code bind mount.
+        # The code is now INSIDE the image.
         volumes:
-          - "{{ project_root }}/frontend/science-calc:/frontend:delegated"
+          # We ONLY keep the named volume for node_modules to preserve it if needed,
+          # though with `npm ci` it's less critical. Can be removed if you prefer.
           - "frontend_node_modules:/frontend/node_modules"
         ports:
           - "5173:5173"
