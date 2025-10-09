@@ -5,6 +5,8 @@
   become: yes
 
   vars:
+    # Default to the current directory, but allow override from Jenkins
+    project_root: "{{ lookup('env', 'WORKSPACE') | default('.', true) }}"
     backend_image_name: "deathlymade/spe-backend"
     frontend_image_name: "deathlymade/spe-frontend"
     backend_container_name: "sci-calc-backend-dev"
@@ -12,6 +14,18 @@
     app_network: "sci-calc-net"
 
   tasks:
+    - name: DEBUG - Print the project root path
+      ansible.builtin.debug:
+        msg: "Building from project root: {{ project_root }}"
+
+    - name: DEBUG - List files in the project root
+      command: ls -la "{{ project_root }}"
+      register: file_list
+    
+    - name: DEBUG - Show file listing
+      ansible.builtin.debug:
+        var: file_list.stdout_lines
+
     - name: Install required Python libraries for Ansible Docker modules
       pip:
         name:
@@ -20,7 +34,7 @@
         state: present
 
     - name: Create Docker volumes
-      docker_volume:
+      community.docker.docker_volume:
         name: "{{ item }}"
         state: present
       loop:
@@ -28,28 +42,31 @@
         - frontend_node_modules
 
     - name: Create a dedicated network for the application
-      docker_network:
+      community.docker.docker_network:
         name: "{{ app_network }}"
         state: present
 
     - name: Build the backend image
-      docker_image:
+      community.docker.docker_image:
         name: "{{ backend_image_name }}"
         build:
-          path: .
+          # Use the absolute path from the WORKSPACE variable
+          path: "{{ project_root }}"
           dockerfile: backend.Dockerfile
         source: build
         state: present
+        # Force a rebuild if the source code changes, good for CI
+        force_source: yes
       register: backend_image
 
     - name: Run the backend container
-      docker_container:
+      community.docker.docker_container:
         name: "{{ backend_container_name }}"
         image: "{{ backend_image_name }}"
         state: started
         recreate: yes
         volumes:
-          - "./:/app/backend:delegated"
+          - "{{ project_root }}/:/app/backend:delegated"
           - "m2-repo:/root/.m2/repository"
         ports:
           - "8081:8081"
@@ -61,23 +78,26 @@
               - backend
 
     - name: Build the frontend image
-      docker_image:
+      community.docker.docker_image:
         name: "{{ frontend_image_name }}"
         build:
-          path: .
+          # Use the absolute path from the WORKSPACE variable
+          path: "{{ project_root }}"
           dockerfile: frontend.Dockerfile
         source: build
         state: present
+        # Force a rebuild if the source code changes
+        force_source: yes
       register: frontend_image
 
     - name: Run the frontend container
-      docker_container:
+      community.docker.docker_container:
         name: "{{ frontend_container_name }}"
         image: "{{ frontend_image_name }}"
         state: started
         recreate: yes
         volumes:
-          - "./frontend/science-calc:/frontend:delegated"
+          - "{{ project_root }}/frontend/science-calc:/frontend:delegated"
           - "frontend_node_modules:/frontend/node_modules"
         ports:
           - "5173:5173"
