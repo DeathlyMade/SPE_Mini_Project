@@ -19,7 +19,7 @@ pipeline {
         stage('Build Backend') {
             steps {
                 echo 'Building the Java backend...'
-                sh 'mvn clean build'
+                sh 'mvn clean install'
             }
         }
 
