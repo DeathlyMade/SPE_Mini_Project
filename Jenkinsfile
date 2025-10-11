@@ -16,10 +16,17 @@ pipeline {
             }
         }
 
-        stage('Build & Test Backend') {
+        stage('Build Backend') {
             steps {
-                echo 'Building and testing the Java backend...'
-                sh 'mvn clean install'
+                echo 'Building the Java backend...'
+                sh 'mvn clean build'
+            }
+        }
+
+        stage('Test Backend') {
+            steps {
+                echo 'Testing the Java backend...'
+                sh 'mvn clean test'
             }
         }
 
