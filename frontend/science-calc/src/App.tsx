@@ -6,7 +6,7 @@ const App: React.FC = () => {
     <div className="app">
       <header>
         <h1>Scientific Calculator</h1>
-        <p className="subtitle">React + TypeScript frontend, Spring Boot backend</p>
+        <p className="subtitle">React + TypeScript frontend, Spring Boot backend (Test)</p>
       </header>
       <main>
         <Calculator />
